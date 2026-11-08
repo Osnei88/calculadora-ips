@@ -1,0 +1,218 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Calculadora de IPs</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <main class="container">
+
+        <header class="header">
+            <div class="logo">IP<span>CALC</span></div>
+            <p>Ferramenta de endereçamento IPv4</p>
+        </header>
+
+        <section class="calculator">
+
+            <div class="section-title">
+                <h1>Calculadora de IPs</h1>
+                <p>Informe um endereço IPv4 e seu prefixo CIDR.</p>
+            </div>
+
+            <form id="ipForm">
+
+                <label for="ip">Endereço IP / CIDR</label>
+
+                <div class="input-group">
+
+                    <input
+                        type="text"
+                        id="ip"
+                        placeholder="Ex.: 172.45.60.116/21"
+                        autocomplete="off"
+                        required
+                    >
+
+                    <button type="submit" id="calculateButton">
+                        Calcular
+                    </button>
+
+                </div>
+
+                <p class="hint">
+                    Exemplo: 192.168.1.10/24
+                </p>
+
+            </form>
+
+            <div id="error" class="error hidden"></div>
+
+            <section id="results" class="results hidden">
+
+                <div class="network-card">
+
+                    <span>ENDEREÇO DA REDE</span>
+
+                    <h2 id="networkAddress">-</h2>
+
+                    <p id="networkCidr">-</p>
+
+                </div>
+
+                <h3>Informações da rede</h3>
+
+                <div class="table-container">
+
+                    <table>
+
+                        <tbody id="resultTable"></tbody>
+
+                    </table>
+
+                </div>
+
+                <h3>Representação binária</h3>
+
+                <div class="binary-card">
+
+                    <span>Endereço IP</span>
+                    <code id="ipBinary">-</code>
+
+                    <span>Máscara de sub-rede</span>
+                    <code id="maskBinary">-</code>
+
+                </div>
+
+            </section>
+
+        </section>
+
+        <footer>
+            Calculadora de IPs | Projeto de estudos
+        </footer>
+
+    </main>
+
+    <script>
+
+        const form = document.getElementById("ipForm");
+
+        const errorBox = document.getElementById("error");
+
+        const results = document.getElementById("results");
+
+        const button = document.getElementById("calculateButton");
+
+
+        form.addEventListener("submit", async function(event) {
+
+            event.preventDefault();
+
+            const ip = document.getElementById("ip").value.trim();
+
+            errorBox.classList.add("hidden");
+
+            results.classList.add("hidden");
+
+            button.disabled = true;
+            button.textContent = "Calculando...";
+
+            try {
+
+                const response = await fetch(
+                    `/api/calcular?ip=${encodeURIComponent(ip)}`
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.erro || "Erro ao calcular.");
+                }
+
+                mostrarResultados(data);
+
+            } catch (error) {
+
+                errorBox.textContent = error.message;
+
+                errorBox.classList.remove("hidden");
+
+            } finally {
+
+                button.disabled = false;
+                button.textContent = "Calcular";
+
+            }
+
+        });
+
+
+        function mostrarResultados(data) {
+
+            document.getElementById("networkAddress").textContent =
+                data.rede;
+
+            document.getElementById("networkCidr").textContent =
+                data.cidr;
+
+            document.getElementById("ipBinary").textContent =
+                data.ip_binario;
+
+            document.getElementById("maskBinary").textContent =
+                data.mascara_binaria;
+
+
+            const campos = [
+
+                ["Endereço IP", data.ip],
+                ["Classe tradicional", data.classe],
+                ["Prefixo CIDR", data.cidr],
+                ["Máscara de sub-rede", data.mascara],
+                ["Wildcard", data.wildcard],
+                ["Endereço de rede", data.rede],
+                ["Primeiro IP", data.primeiro_ip],
+                ["Último IP", data.ultimo_ip],
+                ["Broadcast", data.broadcast],
+                ["Total de endereços", data.total_enderecos],
+                ["Hosts disponíveis", data.hosts_disponiveis]
+
+            ];
+
+
+            const tabela = document.getElementById("resultTable");
+
+            tabela.replaceChildren();
+
+            campos.forEach(function(campo) {
+
+                const linha = document.createElement("tr");
+
+                const nome = document.createElement("td");
+                nome.textContent = campo[0];
+
+                const valor = document.createElement("td");
+                valor.textContent = campo[1];
+
+                linha.appendChild(nome);
+                linha.appendChild(valor);
+
+                tabela.appendChild(linha);
+
+            });
+
+            results.classList.remove("hidden");
+
+        }
+
+    </script>
+
+</body>
+</html>
